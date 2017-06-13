@@ -22,8 +22,23 @@
 	} );
 
 	function insert_custom_default_caption( $post_id, $post_after = null, $post_before = null ) {
+		if (! $post_id) {
+			return false;
+		}
 		add_hash_to_attachment_post_meta( $post_id );
 	}
+function action_rest_insert_attachment( $attachment, $request, $true ) {
+	
+	if ((! $attachment) && (!is_object( $attachment))) {
+		return false;
+	}
+	add_hash_to_attachment_post_meta( $attachment->id);
+    // make action magic happen here...
+};
+
+// add the action
+add_action( 'rest_insert_attachment', 'action_rest_insert_attachment', 10, 3 );
+
 
 	add_action( 'add_attachment', 'insert_custom_default_caption' );
 	add_action( 'attachment_updated', 'insert_custom_default_caption' );
@@ -68,4 +83,3 @@
 
 
 	register_activation_hook( __FILE__, 'rest_api_media_hash_activation' );
-	
