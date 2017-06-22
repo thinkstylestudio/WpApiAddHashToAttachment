@@ -1,0 +1,16 @@
+{
+    "name"       : "thinkstylestudio/imagehash",
+    "description": "Jetpack supercharges your self‑hosted WordPress site with the awesome cloud power of WordPress.com",
+    "homepage"   : "http://jetpack.com/",
+    "type"       : "wordpress-plugin",                                                   
+    "license"    : "GPL-2.0+",
+    "require"    : {
+        "composer/installers": "~1.0",
+         "jenssegers/imagehash": "^0.4.2"
+    },
+    "autoload": {
+        "classmap": [
+            "","src/"
+        ]
+    }
+}
