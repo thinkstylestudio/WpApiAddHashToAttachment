@@ -8,6 +8,9 @@
 	 * License: GPL2+
 	 **/
 
+	require __DIR__ . '/vendor/autoload.php';
+
+
 	add_action( 'rest_api_init', function () {
 		register_rest_field( 'attachment', 'media_file_md5', array(
 			'get_callback' => function ( $comment_arr ) {
@@ -66,20 +69,25 @@ add_action( 'rest_insert_attachment', 'action_rest_insert_attachment', 10, 3 );
 		}
 	}
 
-	function add_hash_to_attachment_post_meta( $post_id = false ) {
-		if ( ! $post_id ) {
+	function add_hash_to_attachment_post_meta( $image_id = false ) {
+		if ( ! $image_id ) {
 			return false;
 		}
-		$file_path = get_attached_file( $post_id );
+		$file_path = get_attached_file( $image_id );
 		if ( ! file_exists( $file_path ) ) {
 			return false;
 		}
-		$md5_hash_of_file = md5_file( $file_path );
-		if ( $post_id && $md5_hash_of_file ) {
-			update_post_meta( $post_id, '_attachment_file_hash', $md5_hash_of_file );
+
+		$new    = new ImageHasher();
+		$imageHash = $new->generate( $file_path );
+		$md5_hash_of_file = $imageHash;
+		if ( $image_id && $md5_hash_of_file ) {
+			update_post_meta( $image_id, '_attachment_file_hash', $md5_hash_of_file );
 		}
 		return true;
 	}
 
 
 	register_activation_hook( __FILE__, 'rest_api_media_hash_activation' );
+
+
