@@ -1,16 +1,20 @@
 {
-    "name"       : "thinkstylestudio/imagehash",
-    "description": "Jetpack supercharges your self‑hosted WordPress site with the awesome cloud power of WordPress.com",
-    "homepage"   : "http://jetpack.com/",
-    "type"       : "wordpress-plugin",                                                   
-    "license"    : "GPL-2.0+",
-    "require"    : {
-        "composer/installers": "~1.0",
-         "jenssegers/imagehash": "^0.4.2"
+    "name": "thinkstylestudio/imagehash",
+    "description": "WPAPI Add Hash to Attachment generates a string based fingerprint of each image. Helpful when comparing images via WP-API",
+    "homepage": "http://thinkstylestudio.com/",
+    "type": "wordpress-plugin",
+    "license": "GPL-2.0+",
+    "require": {
+        "composer/installers": "~1.9",
+        "jenssegers/imagehash": "^0.4.2"
+    },
+    "require-dev": {
+        "roave/security-advisories": "dev-master"
     },
     "autoload": {
         "classmap": [
-            "","src/"
+            "",
+            "src/"
         ]
     }
 }
