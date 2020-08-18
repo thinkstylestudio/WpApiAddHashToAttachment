@@ -46,7 +46,7 @@ function api_media_hash_update_md5_on_rest_insert_attachment( $attachment, $requ
 
 function api_media_hash_rest_api_init() {
 	register_rest_field( 'attachment', 'media_file_md5', [
-		'get_callback' => function ( $comment_arr ) {
+		'get_callback' => static function ( $comment_arr ) {
 			return get_post_meta( $comment_arr['id'], ATTACHMENT_FILE_HASH, true );
 		},
 		'schema'       => [

@@ -41,9 +41,8 @@ class ImageHasher {
 	 * @return int
 	 */
 	public static function generate( bool $file_path ): int {
-		$image_hasher     = new ImageHasher();
-		$md5_hash_of_file = $image_hasher->hash( $file_path );
+		$image_hasher = new ImageHasher();
 
-		return $md5_hash_of_file;
+		return $image_hasher->hash( $file_path );
 	}
 }
