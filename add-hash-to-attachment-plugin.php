@@ -1,4 +1,4 @@
-<?php defined( 'ABSPATH' ) OR exit;
+<?php defined( 'ABSPATH' ) or exit;
 /**
  * Plugin Name: WP REST API Media File Hash
  * Description: This plugin adds an hash parameter to the media query.
@@ -11,22 +11,7 @@
 require __DIR__ . '/vendor/autoload.php';
 
 const ATTACHMENT_FILE_HASH = '_attachment_file_hash';
-/*
- * Register WP-API endpoint and attach it to an attachment post meta field with
- *
- * */
-add_action( 'rest_api_init', function () {
-	register_rest_field( 'attachment', 'media_file_md5', [
-		'get_callback' => function ( $comment_arr ) {
 
-			return get_post_meta( $comment_arr['id'], ATTACHMENT_FILE_HASH, true );
-		},
-		'schema'       => [
-			'description' => __( 'Attachment image hash.' ),
-			'type'        => 'string'
-		]
-	] );
-} );
 
 /**
  * @param      $post_id
@@ -35,11 +20,12 @@ add_action( 'rest_api_init', function () {
  *
  * @return bool
  */
-function insert_custom_default_caption( $post_id, $post_after = null, $post_before = null ) {
+function api_media_hash_update_md5_on_add_update_attachment( $post_id, $post_after = null, $post_before = null ) {
 	if ( ! $post_id ) {
 		return false;
 	}
-	add_hash_to_attachment_post_meta( $post_id );
+
+	return api_media_hash_process_post_meta( $post_id );
 }
 
 /**
@@ -49,50 +35,40 @@ function insert_custom_default_caption( $post_id, $post_after = null, $post_befo
  *
  * @return bool
  */
-function action_rest_insert_attachment( $attachment, $request, $true ) {
+function api_media_hash_update_md5_on_rest_insert_attachment( $attachment, $request, $true ) {
 
 	if ( ( ! $attachment ) && ( ! is_object( $attachment ) ) ) {
 		return false;
 	}
-	add_hash_to_attachment_post_meta( $attachment->id );
-	// make action magic happen here...
+
+	return api_media_hash_process_post_meta( $attachment->id );
 }
 
-// add the action
-add_action( 'rest_insert_attachment', 'action_rest_insert_attachment', 10, 3 );
-
-
-add_action( 'add_attachment', 'insert_custom_default_caption' );
-add_action( 'attachment_updated', 'insert_custom_default_caption' );
-if ( ! function_exists( 'write_log' ) ) {
-	/**
-	 * @param $log
-	 */
-	function write_log( $log ) {
-		if ( is_array( $log ) || is_object( $log ) ) {
-			error_log( print_r( $log, true ) );
-		} else {
-			error_log( $log );
-		}
-	}
+function api_media_hash_rest_api_init() {
+	register_rest_field( 'attachment', 'media_file_md5', [
+		'get_callback' => function ( $comment_arr ) {
+			return get_post_meta( $comment_arr['id'], ATTACHMENT_FILE_HASH, true );
+		},
+		'schema'       => [
+			'description' => __( 'Will return an md5 hash/fingerprint of image files in library. Each string can be used to compare if duplicates are present. Hash value changes only when an images height to width ratio change. Scaling the image will not generate a new md5 hash' ),
+			'type'        => 'string'
+		]
+	] );
 }
 
 /**
  *
  */
-function rest_api_media_hash_deactivation() {
+function api_media_hash_deactivation() {
 
 	if ( ! current_user_can( 'activate_plugins' ) ) {
 		return;
 	}
+
 	$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : '';
 	check_admin_referer( "deactivate-plugin_{$plugin}" );
 
 	delete_post_meta_by_key( ATTACHMENT_FILE_HASH );
-
-
-	# Uncomment the following line to see the function in action
-	# exit( var_dump( $_GET ) );
 }
 
 /**
@@ -103,11 +79,9 @@ function rest_api_media_hash_activation() {
 	if ( ! current_user_can( 'activate_plugins' ) ) {
 		return;
 	}
+
 	$plugin = isset( $_REQUEST['plugin'] ) ? $_REQUEST['plugin'] : '';
 	check_admin_referer( "activate-plugin_{$plugin}" );
-
-	# Uncomment the following line to see the function in action
-	# exit( var_dump( $_GET ) );
 
 	$query_images_args = [
 		'post_type'      => 'attachment',
@@ -121,7 +95,7 @@ function rest_api_media_hash_activation() {
 	$query_images = new WP_Query( $query_images_args );
 
 	foreach ( $query_images->posts as $image ) {
-		add_hash_to_attachment_post_meta( $image->ID );
+		api_media_hash_process_post_meta( $image->ID );
 	}
 }
 
@@ -140,9 +114,6 @@ function rest_api_media_hash_uninstall() {
 	if ( __FILE__ !== WP_UNINSTALL_PLUGIN ) {
 		return;
 	}
-
-	# Uncomment the following line to see the function in action
-	# exit( var_dump( $_GET ) );
 }
 
 /**
@@ -154,28 +125,37 @@ function rest_api_media_hash_uninstall() {
  *
  * @return bool
  */
-function add_hash_to_attachment_post_meta( $image_id = false ) {
+function api_media_hash_process_post_meta( $image_id = false ) {
+
 	if ( ! $image_id ) {
 		return false;
 	}
+
 	$file_path = get_attached_file( $image_id );
+
 	if ( ! file_exists( $file_path ) ) {
+		// cleanup if file does not exist
+		delete_post_meta( $image_id, ATTACHMENT_FILE_HASH );
+
 		return false;
 	}
 
-	$image_hasher     = new ImageHasher();
-	$image_hash       = $image_hasher->generate( $file_path );
-	$md5_hash_of_file = $image_hash;
-	if ( $image_id && $md5_hash_of_file ) {
-		update_post_meta( $image_id, '' . ATTACHMENT_FILE_HASH . '', $md5_hash_of_file );
+	$md5_hash_of_file = ImageHasher::generate( $file_path );
+
+	if ( $md5_hash_of_file ) {
+		update_post_meta( $image_id, ATTACHMENT_FILE_HASH, $md5_hash_of_file );
 	}
 
 	return true;
 }
 
+add_action( 'rest_api_init', 'api_media_hash_rest_api_init' );
+add_action( 'rest_insert_attachment', 'api_media_hash_update_md5_on_rest_insert_attachment', 10, 3 );
+add_action( 'add_attachment', 'api_media_hash_update_md5_on_add_update_attachment' );
+add_action( 'attachment_updated', 'api_media_hash_update_md5_on_add_update_attachment' );
 
 register_activation_hook( __FILE__, 'rest_api_media_hash_activation' );
-register_deactivation_hook( __FILE__, 'rest_api_media_hash_deactivation' );
+register_deactivation_hook( __FILE__, 'api_media_hash_deactivation' );
 register_uninstall_hook( __FILE__, 'rest_api_media_hash_uninstall' );
 
 

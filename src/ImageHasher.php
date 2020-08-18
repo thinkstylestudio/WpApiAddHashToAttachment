@@ -1,44 +1,49 @@
 <?php
 
-use Jenssegers\ImageHash\Implementations\DifferenceHash;
 use Jenssegers\ImageHash\ImageHash;
 
 /**
- * Class ImageHasher
+ * Image Hash Wrapper Class
  */
 class ImageHasher {
-
 	/**
 	 * @var ImageHash
 	 */
 	public $hasher;
 	/**
-	 * @var
+	 * @var string
 	 */
-	public $imageLocation;
+	public $file_path;
 
 	/**
 	 * ImageHasher constructor.
 	 */
 	public function __construct() {
-
 		$this->hasher = new ImageHash();
-
 	}
 
 	/**
 	 * Given an image location generate a hash of that image.
 	 *
-	 * @param $imageLocation
+	 * @param $file_path
 	 *
 	 * @return int
 	 */
-	public function generate( $imageLocation ) {
+	public function hash( $file_path ) {
+		$this->file_path = $file_path;
 
-		$this->imageLocation = $imageLocation;
-
-		return $this->hasher->hash( $this->imageLocation );
-
+		return $this->hasher->hash( $this->file_path );
 	}
 
+	/**
+	 * @param bool $file_path
+	 *
+	 * @return int
+	 */
+	public static function generate( bool $file_path ): int {
+		$image_hasher     = new ImageHasher();
+		$md5_hash_of_file = $image_hasher->hash( $file_path );
+
+		return $md5_hash_of_file;
+	}
 }
