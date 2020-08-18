@@ -25,7 +25,7 @@ function api_media_hash_update_md5_on_add_update_attachment( $post_id, $post_aft
 		return false;
 	}
 
-	return api_media_hash_process_post_meta( $post_id );
+	return HashManager::processPostMeta( $post_id );
 }
 
 /**
@@ -41,7 +41,7 @@ function api_media_hash_update_md5_on_rest_insert_attachment( $attachment, $requ
 		return false;
 	}
 
-	return api_media_hash_process_post_meta( $attachment->id );
+	return HashManager::processPostMeta( $attachment->id );
 }
 
 function api_media_hash_rest_api_init() {
@@ -95,7 +95,7 @@ function rest_api_media_hash_activation() {
 	$query_images = new WP_Query( $query_images_args );
 
 	foreach ( $query_images->posts as $image ) {
-		api_media_hash_process_post_meta( $image->ID );
+		HashManager::processPostMeta( $image->ID );
 	}
 }
 
@@ -114,39 +114,6 @@ function rest_api_media_hash_uninstall() {
 	if ( __FILE__ !== WP_UNINSTALL_PLUGIN ) {
 		return;
 	}
-}
-
-/**
- * Generates a hash using the ImageHasher() library which generates the hash based
- * the images visual profile. Then the image hash is saved to the corresponding
- * attachment as post meta
- *
- * @param bool $image_id
- *
- * @return bool
- */
-function api_media_hash_process_post_meta( $image_id = false ) {
-
-	if ( ! $image_id ) {
-		return false;
-	}
-
-	$file_path = get_attached_file( $image_id );
-
-	if ( ! file_exists( $file_path ) ) {
-		// cleanup if file does not exist
-		delete_post_meta( $image_id, ATTACHMENT_FILE_HASH );
-
-		return false;
-	}
-
-	$md5_hash_of_file = ImageHasher::generate( $file_path );
-
-	if ( $md5_hash_of_file ) {
-		update_post_meta( $image_id, ATTACHMENT_FILE_HASH, $md5_hash_of_file );
-	}
-
-	return true;
 }
 
 add_action( 'rest_api_init', 'api_media_hash_rest_api_init' );
